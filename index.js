@@ -1,2 +1,3 @@
 /*jshint node: true */
-module.exports = require('./StateMachine').StateMachine;
+require('./state-machine');
+module.exports = StateMachine;
