@@ -2,7 +2,7 @@
   "author": "Sergey Tsapenko <4031651@gmail.com> http://w3maker.name",
   "name": "sfsm",
   "description": "Simple Finite State Machine. Based on Javascript State Machine v2 (https://github.com/jakesgordon/javascript-state-machine/) By jakesgordon",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/4031651/node-javascript-state-machine",
   "repository": {
     "type": "git",
