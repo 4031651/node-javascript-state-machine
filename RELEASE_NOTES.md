@@ -1,3 +1,26 @@
+Version 2.2.0 (January 26th 2013)
+---------------------------------
+ 
+ * Added optional `final` state(s) and `isFinished()` helper method (issue #23)
+ * extended `fsm.is()` to accept an array of states (in addition to a single state)
+ * Added generic event callbacks 'onbeforeevent' and 'onafterevent' (issue #28)
+ * Added generic state callbacks 'onleavestate' and 'onenterstate'  (issue #28)
+ * Fixed 'undefined' event return codes (issue #34) - pull from gentooboontoo (thanks!)
+ * Allow async event transition to be cancelled (issue #22)
+ * [read more...](http://codeincomplete.com/posts/2013/1/26/javascript_state_machine_v2_2_0/)
+
+Version 2.1.0 (January 7th 2012)
+--------------------------------
+
+ * Wrapped in self executing function to be more easily used with loaders like `require.js` or `curl.js` (issue #15)
+ * Allow event to be cancelled by returning `false` from `onleavestate` handler (issue #13) - WARNING: this breaks backward compatibility for async transitions (you now need to return `StateMachine.ASYNC` instead of `false`)
+ * Added explicit return values for event methods (issue #12)
+ * Added support for wildcard events that can be fired 'from' any state (issue #11)
+ * Added support for no-op events that transition 'to' the same state  (issue #5)
+ * extended custom error callback to handle any exceptions caused by caller provided callbacks
+ * added custom error callback to override exception when an illegal state transition is attempted (thanks to cboone)
+ * fixed typos (thanks to cboone)
+ * fixed issue #4 - ensure before/after event hooks are called even if the event doesn't result in a state change 
 
 Version 2.0.0 (August 19th 2011)
 --------------------------------
