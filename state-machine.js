@@ -7,7 +7,7 @@
 
 */
 
-var StateMachine = module.exports = {
+var StateMachine = StateMachine = module.exports = {
 
     //---------------------------------------------------------------------------
 

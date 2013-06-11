@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 
-module("classes");
+QUnit.module("classes");
 
 //-----------------------------------------------------------------------------
 
@@ -70,7 +70,7 @@ test("github issue 19", function() {
     events : [{name: 'execute', from: 'ready',   to: 'running'},
               {name: 'abort',   from: 'running', to: 'ready'}]
     });
- 
+
   var foo = new Foo();
   var bar = new Foo();
 

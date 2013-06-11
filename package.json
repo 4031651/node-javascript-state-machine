@@ -11,5 +11,11 @@
   "main": "state-machine.js",
   "engines": {
     "node": ">= 0.4.12"
+  },
+  "scripts": {
+    "test": "TEST=1 ./node_modules/qunit/bin/cli.js -c state-machine.js -t test/test_basics.js test/test_async.js test/test_advanced.js test/test_classes.js test/test_initialize.js"
+  },
+  "devDependencies": {
+    "qunit": "*"
   }
 }
