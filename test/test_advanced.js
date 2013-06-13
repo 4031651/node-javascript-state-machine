@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 
-module("advanced");
+QUnit.module("advanced");
 
 //-----------------------------------------------------------------------------
 
@@ -15,21 +15,21 @@ test("multiple 'from' states for the same event", function() {
       { name: 'clear', from: ['yellow', 'red'],   to: 'green'  },
   ]});
 
-  equals(fsm.current, 'green', "initial state should be green");
+  equal(fsm.current, 'green', "initial state should be green");
 
   ok(fsm.can('warn'),     "should be able to warn from green state")
-  ok(fsm.can('panic'),    "should NOT be able to panic from green state")
+  ok(fsm.can('panic'),    "should be able to panic from green state")
   ok(fsm.cannot('calm'),  "should NOT be able to calm from green state")
   ok(fsm.cannot('clear'), "should NOT be able to clear from green state")
 
-  fsm.warn();  equals(fsm.current, 'yellow', "warn  event should transition from green  to yellow");
-  fsm.panic(); equals(fsm.current, 'red',    "panic event should transition from yellow to red");
-  fsm.calm();  equals(fsm.current, 'yellow', "calm  event should transition from red    to yellow");
-  fsm.clear(); equals(fsm.current, 'green',  "clear event should transition from yellow to green");
+  fsm.warn();  equal(fsm.current, 'yellow', "warn  event should transition from green  to yellow");
+  fsm.panic(); equal(fsm.current, 'red',    "panic event should transition from yellow to red");
+  fsm.calm();  equal(fsm.current, 'yellow', "calm  event should transition from red    to yellow");
+  fsm.clear(); equal(fsm.current, 'green',  "clear event should transition from yellow to green");
 
-  fsm.panic(); equals(fsm.current, 'red',   "panic event should transition from green to red");
-  fsm.clear(); equals(fsm.current, 'green', "clear event should transition from red to green");
-   
+  fsm.panic(); equal(fsm.current, 'red',   "panic event should transition from green to red");
+  fsm.clear(); equal(fsm.current, 'green', "clear event should transition from red to green");
+
 });
 
 //-----------------------------------------------------------------------------
@@ -45,22 +45,64 @@ test("multiple 'to' states for the same event", function() {
       { name: 'rest', from: ['hungry', 'satisfied', 'full', 'sick'], to: 'hungry'    },
   ]});
 
-  equals(fsm.current, 'hungry');
+  equal(fsm.current, 'hungry');
 
   ok(fsm.can('eat'));
   ok(fsm.can('rest'));
 
   fsm.eat();
-  equals(fsm.current, 'satisfied');
+  equal(fsm.current, 'satisfied');
 
   fsm.eat();
-  equals(fsm.current, 'full');
+  equal(fsm.current, 'full');
 
   fsm.eat();
-  equals(fsm.current, 'sick');
+  equal(fsm.current, 'sick');
 
   fsm.rest();
-  equals(fsm.current, 'hungry');
+  equal(fsm.current, 'hungry');
+
+});
+
+//-----------------------------------------------------------------------------
+
+test("no-op transitions (github issue #5) with multiple from states", function() {
+
+  var fsm = StateMachine.create({
+    initial: 'green',
+    events: [
+      { name: 'warn',  from: 'green',             to: 'yellow' },
+      { name: 'panic', from: ['green', 'yellow'], to: 'red'    },
+      { name: 'noop',  from: ['green', 'yellow']               }, // NOTE: 'to' not specified
+      { name: 'calm',  from: 'red',               to: 'yellow' },
+      { name: 'clear', from: ['yellow', 'red'],   to: 'green'  },
+  ]});
+
+  equal(fsm.current, 'green', "initial state should be green");
+
+  ok(fsm.can('warn'),     "should be able to warn from green state")
+  ok(fsm.can('panic'),    "should be able to panic from green state")
+  ok(fsm.can('noop'),     "should be able to noop from green state")
+  ok(fsm.cannot('calm'),  "should NOT be able to calm from green state")
+  ok(fsm.cannot('clear'), "should NOT be able to clear from green state")
+
+  fsm.noop();  equal(fsm.current, 'green',  "noop  event should not transition");
+  fsm.warn();  equal(fsm.current, 'yellow', "warn  event should transition from green  to yellow");
+
+  ok(fsm.cannot('warn'),  "should NOT be able to warn  from yellow state")
+  ok(fsm.can('panic'),    "should     be able to panic from yellow state")
+  ok(fsm.can('noop'),     "should     be able to noop  from yellow state")
+  ok(fsm.cannot('calm'),  "should NOT be able to calm  from yellow state")
+  ok(fsm.can('clear'),    "should     be able to clear from yellow state")
+
+  fsm.noop();  equal(fsm.current, 'yellow', "noop  event should not transition");
+  fsm.panic(); equal(fsm.current, 'red',    "panic event should transition from yellow to red");
+
+  ok(fsm.cannot('warn'),  "should NOT be able to warn  from red state")
+  ok(fsm.cannot('panic'), "should NOT be able to panic from red state")
+  ok(fsm.cannot('noop'),  "should NOT be able to noop  from red state")
+  ok(fsm.can('calm'),     "should     be able to calm  from red state")
+  ok(fsm.can('clear'),    "should     be able to clear from red state")
 
 });
 
@@ -79,8 +121,15 @@ test("callbacks are called when appropriate for multiple 'from' and 'to' transit
       { name: 'rest', from: ['hungry', 'satisfied', 'full', 'sick'], to: 'hungry'    },
     ],
     callbacks: {
-      onchangestate: function(event,from,to) { called.push('onchange from ' + from + ' to ' + to); },
 
+      // generic callbacks
+      onbeforeevent: function(event,from,to) { called.push('onbefore(' + event + ')'); },
+      onafterevent:  function(event,from,to) { called.push('onafter('  + event + ')'); },
+      onleavestate:  function(event,from,to) { called.push('onleave('  + from  + ')'); },
+      onenterstate:  function(event,from,to) { called.push('onenter('  + to    + ')'); },
+      onchangestate: function(event,from,to) { called.push('onchange(' + from + ',' + to + ')'); },
+
+      // specific state callbacks
       onenterhungry:    function() { called.push('onenterhungry');    },
       onleavehungry:    function() { called.push('onleavehungry');    },
       onentersatisfied: function() { called.push('onentersatisfied'); },
@@ -90,6 +139,7 @@ test("callbacks are called when appropriate for multiple 'from' and 'to' transit
       onentersick:      function() { called.push('onentersick');      },
       onleavesick:      function() { called.push('onleavesick');      },
 
+      // specific event callbacks
       onbeforeeat:      function() { called.push('onbeforeeat');      },
       onaftereat:       function() { called.push('onaftereat');       },
       onbeforerest:     function() { called.push('onbeforerest');     },
@@ -99,19 +149,59 @@ test("callbacks are called when appropriate for multiple 'from' and 'to' transit
 
   called = [];
   fsm.eat();
-  deepEqual(called, ['onbeforeeat', 'onleavehungry', 'onentersatisfied', 'onchange from hungry to satisfied', 'onaftereat']);
+  deepEqual(called, [
+    'onbeforeeat',
+    'onbefore(eat)',
+    'onleavehungry',
+    'onleave(hungry)',
+    'onentersatisfied',
+    'onenter(satisfied)',
+    'onchange(hungry,satisfied)',
+    'onaftereat',
+    'onafter(eat)'
+  ]);
 
   called = [];
   fsm.eat();
-  deepEqual(called, ['onbeforeeat', 'onleavesatisfied', 'onenterfull', 'onchange from satisfied to full', 'onaftereat']);
+  deepEqual(called, [
+    'onbeforeeat',
+    'onbefore(eat)',
+    'onleavesatisfied',
+    'onleave(satisfied)',
+    'onenterfull',
+    'onenter(full)',
+    'onchange(satisfied,full)',
+    'onaftereat',
+    'onafter(eat)',
+  ]);
 
   called = [];
   fsm.eat();
-  deepEqual(called, ['onbeforeeat', 'onleavefull', 'onentersick', 'onchange from full to sick', 'onaftereat']);
+  deepEqual(called, [
+    'onbeforeeat',
+    'onbefore(eat)',
+    'onleavefull',
+    'onleave(full)',
+    'onentersick',
+    'onenter(sick)',
+    'onchange(full,sick)',
+    'onaftereat',
+    'onafter(eat)'
+  ]);
 
   called = [];
   fsm.rest();
-  deepEqual(called, ['onbeforerest', 'onleavesick', 'onenterhungry', 'onchange from sick to hungry', 'onafterrest']);
+  deepEqual(called, [
+    'onbeforerest',
+    'onbefore(rest)',
+    'onleavesick',
+    'onleave(sick)',
+    'onenterhungry',
+    'onenter(hungry)',
+    'onchange(sick,hungry)',
+    'onafterrest',
+    'onafter(rest)'
+  ]);
 
 });
 
@@ -126,8 +216,16 @@ test("callbacks are called when appropriate for prototype based state machine", 
 
   myFSM.prototype = {
 
-    onchangestate: function(event,from,to) { this.called.push('onchange from ' + from + ' to ' + to); },
+    // generic callbacks
+    onbeforeevent: function(event,from,to) { this.called.push('onbefore(' + event + ')'); },
+    onafterevent:  function(event,from,to) { this.called.push('onafter('  + event + ')'); },
+    onleavestate:  function(event,from,to) { this.called.push('onleave('  + from  + ')'); },
+    onenterstate:  function(event,from,to) { this.called.push('onenter('  + to    + ')'); },
+    onchangestate: function(event,from,to) { this.called.push('onchange(' + from + ',' + to + ')'); },
 
+    // specific state callbacks
+    onenternone:    function() { this.called.push('onenternone');   },
+    onleavenone:    function() { this.called.push('onleavenone');   },
     onentergreen:   function() { this.called.push('onentergreen');  },
     onleavegreen:   function() { this.called.push('onleavegreen');  },
     onenteryellow : function() { this.called.push('onenteryellow'); },
@@ -135,6 +233,7 @@ test("callbacks are called when appropriate for prototype based state machine", 
     onenterred:     function() { this.called.push('onenterred');    },
     onleavered:     function() { this.called.push('onleavered');    },
 
+    // specific event callbacks
     onbeforestartup: function() { this.called.push('onbeforestartup'); },
     onafterstartup:  function() { this.called.push('onafterstartup');  },
     onbeforewarn:    function() { this.called.push('onbeforewarn');    },
@@ -161,16 +260,19 @@ test("callbacks are called when appropriate for prototype based state machine", 
   equal(a.current, 'green', 'start with correct state');
   equal(b.current, 'green', 'start with correct state');
 
-  deepEqual(a.called, ['onbeforestartup', 'onentergreen', 'onchange from none to green', 'onafterstartup']);
-  deepEqual(b.called, ['onbeforestartup', 'onentergreen', 'onchange from none to green', 'onafterstartup']);
+  deepEqual(a.called, ['onbeforestartup', 'onbefore(startup)', 'onleavenone', 'onleave(none)', 'onentergreen', 'onenter(green)', 'onchange(none,green)', 'onafterstartup', 'onafter(startup)']);
+  deepEqual(b.called, ['onbeforestartup', 'onbefore(startup)', 'onleavenone', 'onleave(none)', 'onentergreen', 'onenter(green)', 'onchange(none,green)', 'onafterstartup', 'onafter(startup)']);
+
+  a.called = [];
+  b.called = [];
 
   a.warn();
 
   equal(a.current, 'yellow', 'maintain independent current state');
   equal(b.current, 'green',  'maintain independent current state');
 
-  deepEqual(a.called, ['onbeforestartup', 'onentergreen', 'onchange from none to green', 'onafterstartup', 'onbeforewarn', 'onleavegreen', 'onenteryellow', 'onchange from green to yellow', 'onafterwarn']);
-  deepEqual(b.called, ['onbeforestartup', 'onentergreen', 'onchange from none to green', 'onafterstartup']);
+  deepEqual(a.called, ['onbeforewarn', 'onbefore(warn)', 'onleavegreen', 'onleave(green)', 'onenteryellow', 'onenter(yellow)', 'onchange(green,yellow)', 'onafterwarn', 'onafter(warn)']);
+  deepEqual(b.called, []);
 
 });
 

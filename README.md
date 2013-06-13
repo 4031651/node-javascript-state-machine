@@ -1,10 +1,10 @@
-Javascript Finite State Machine (v2.0.0)
+Javascript Finite State Machine (v2.2.0)
 ========================================
 
 This standalone javascript micro-framework provides a finite state machine for your pleasure.
 
  * You can find the [code here](https://github.com/jakesgordon/javascript-state-machine)
- * You can find a [description here](http://codeincomplete.com/posts/2011/8/19/javascript_state_machine_v2/)
+ * You can find a [description here](http://codeincomplete.com/posts/2013/1/26/javascript_state_machine_v2_2_0/)
  * You can find a [working demo here](http://codeincomplete.com/posts/2011/8/19/javascript_state_machine_v2/example/)
 
 Download
@@ -80,30 +80,35 @@ This example will create an object with 2 event methods:
 The `rest` event will always transition to the `hungry` state, while the `eat` event
 will transition to a state that is dependent on the current state.
 
+>> NOTE: The `rest` event could use a wildcard '*' for the 'from' state if it should be
+allowed from any current state.
+
 >> NOTE: The `rest` event in the above example can also be specified as multiple events with
-the same name if you prefer the verbose approach:
+the same name if you prefer the verbose approach.
 
 Callbacks
 =========
 
-4 callbacks are available if your state machine has methods using the following naming conventions:
+4 types of callback are available by attaching methods to your StateMachine using the following naming conventions:
 
- * onbefore**event** - fired before the event
- * onleave**state**  - fired when leaving the old state
- * onenter**state**  - fired when entering the new state
- * onafter**event**  - fired after the event
+ * `onbeforeEVENT` - fired before the event
+ * `onleaveSTATE`  - fired when leaving the old state
+ * `onenterSTATE`  - fired when entering the new state
+ * `onafterEVENT`  - fired after the event
 
-You can affect the event in 2 ways:
-
- * return `false` from an `onbeforeevent` handler to cancel the event.
- * return `false` from an `onleavestate` handler to perform an asynchronous state transition (see next section)
+>> (using your **specific** EVENT and STATE names)
 
 For convenience, the 2 most useful callbacks can be shortened:
 
- * on**event** - convenience shorthand for onafter**event**
- * on**state** - convenience shorthand for onenter**state**
+ * `onEVENT` - convenience shorthand for `onafterEVENT`
+ * `onSTATE` - convenience shorthand for `onenterSTATE`
 
-In addition, a generic `onchangestate()` callback can be used to call a single function for _all_ state changes:
+In addition, 4 general-purpose callbacks can be used to capture **all** event and state changes:
+
+ * `onbeforeevent` - fired before *any* event
+ * `onleavestate`  - fired when leaving *any* state
+ * `onenterstate`  - fired when entering *any* state
+ * `onafterevent`  - fired after *any* event
 
 All callbacks will be passed the same arguments:
 
@@ -137,10 +142,32 @@ Callbacks can be specified when the state machine is first created:
 
 Additionally, they can be added and removed from the state machine at any time:
 
-    fsm.ongreen       = null;
-    fsm.onyellow      = null;
-    fsm.onred         = null;
-    fsm.onchangestate = function(event, from, to) { document.body.className = to; };
+    fsm.ongreen      = null;
+    fsm.onyellow     = null;
+    fsm.onred        = null;
+    fsm.onenterstate = function(event, from, to) { document.body.className = to; };
+
+
+The order in which callbacks occur is as follows:
+
+>> assume event **go** transitions from **red** state to **green**
+
+ * `onbeforego`    - specific handler for the **go** event only
+ * `onbeforeevent` - generic  handler for all events
+ * `onleavered`    - specific handler for the **red** state only
+ * `onleavestate`  - generic  handler for all states
+ * `onentergreen`  - specific handler for the **green** state only
+ * `onenterstate`  - generic  handler for all states
+ * `onaftergo`     - specific handler for the **go** event only
+ * `onafterevent`  - generic  handler for all events
+
+>> NOTE: the legacy `onchangestate` handler has been deprecated and will be removed in a future version
+
+You can affect the event in 3 ways:
+
+ * return `false` from an `onbeforeEVENT` handler to cancel the event.
+ * return `false` from an `onleaveSTATE` handler to cancel the event.
+ * return `ASYNC` from an `onleaveSTATE` handler to perform an asynchronous state transition (see next section)
 
 Asynchronous State Transitions
 ==============================
@@ -152,7 +179,7 @@ A good example of this is when you transition out of a `menu` state, perhaps you
 fade the menu away, or slide it off the screen and don't want to transition to your `game` state
 until after that animation has been performed.
 
-**New in v2.0** you can now return `false` from your `onleavestate` handler and the state machine
+You can now return `StateMachine.ASYNC` from your `onleavestate` handler and the state machine
 will be _'put on hold'_ until you are ready to trigger the transition using the new `transition()`
 method.
 
@@ -176,19 +203,20 @@ For example, using jQuery effects:
           $('#menu').fadeOut('fast', function() {
             fsm.transition();
           });
-          return false; // tell StateMachine to defer next state until we call transition (in fadeOut callback above)
+          return StateMachine.ASYNC; // tell StateMachine to defer next state until we call transition (in fadeOut callback above)
         },
 
         onleavegame: function() {
           $('#game').slideDown('slow', function() {
             fsm.transition();
           };
-          return false; // tell StateMachine to defer next state until we call transition (in slideDown callback above)
+          return StateMachine.ASYNC; // tell StateMachine to defer next state until we call transition (in slideDown callback above)
         }
 
       }
     });
 
+>> _NOTE: If you decide to cancel the ASYNC event, you can call `fsm.transition.cancel();`
 
 State Machine Classes
 =====================
@@ -224,6 +252,9 @@ instances:
 
 This should be easy to adjust to fit your appropriate mechanism for object construction.
 
+>> _NOTE: the `startup` event can be given any name, but it must be present in some form to 
+   ensure that each instance constructed is initialized with its own unique `current` state._
+
 Initialization Options
 ======================
 
@@ -243,7 +274,7 @@ state and you would need to provide an event to take it out of this state:
     fsm.startup();
     alert(fsm.current); // "green"
 
-If you specify the name of your initial event (as in all the earlier examples), then an
+If you specify the name of your initial state (as in all the earlier examples), then an
 implicit `startup` event will be created for you and fired when the state machine is constructed.
 
     var fsm = StateMachine.create({
@@ -282,6 +313,30 @@ same as the first example in this section where you simply define your own start
 
 So you have a number of choices available to you when initializing your state machine.
 
+>> _IMPORTANT NOTE: if you are using the pattern described in the previous section "State Machine
+   Classes", and wish to declare an `initial` state in this manner, you MUST use the `defer: true`
+   attribute and manually call the starting event in your constructor function. This will ensure
+   that each instance gets its own unique `current` state, rather than an (unwanted) shared
+   `current` state on the prototype object itself._
+
+Handling Failures
+======================
+
+By default, if you try to call an event method that is not allowed in the current state, the
+state machine will throw an exception. If you prefer to handle the problem yourself, you can
+define a custom `error` handler:
+
+    var fsm = StateMachine.create({
+      initial: 'green',
+      error: function(eventName, from, to, args, errorCode, errorMessage) {
+        return 'event ' + eventName + ' was naughty :- ' + errorMessage;
+      },
+      events: [
+        { name: 'panic', from: 'green', to: 'red'   },
+        { name: 'calm',  from: 'red',   to: 'green' },
+    ]});
+    alert(fsm.calm()); // "event calm was naughty :- event not allowed in current state green"
+
 Release Notes
 =============
 
@@ -297,7 +352,7 @@ Contact
 
 If you have any ideas, feedback, requests or bug reports, you can reach me at
 [jake@codeincomplete.com](mailto:jake@codeincomplete.com), or via
-my website: [Code inComplete](http://codeincomplete.com/posts/2011/8/19/javascript_state_machine_v2/)
+my website: [Code inComplete](http://codeincomplete.com/)
 
 
 

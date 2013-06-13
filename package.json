@@ -2,14 +2,20 @@
   "author": "Sergey Tsapenko <4031651@gmail.com> http://w3maker.name",
   "name": "sfsm",
   "description": "Simple Finite State Machine. Based on Javascript State Machine v2 (https://github.com/jakesgordon/javascript-state-machine/) By jakesgordon",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/4031651/node-javascript-state-machine",
   "repository": {
     "type": "git",
     "url": "https://github.com/4031651/node-javascript-state-machine"
   },
-  "main": "index.js",
+  "main": "state-machine.js",
   "engines": {
     "node": ">= 0.4.12"
+  },
+  "scripts": {
+    "test": "TEST=1 ./node_modules/qunit/bin/cli.js -c state-machine.js -t test/test_basics.js test/test_async.js test/test_advanced.js test/test_classes.js test/test_initialize.js"
+  },
+  "devDependencies": {
+    "qunit": "*"
   }
 }
